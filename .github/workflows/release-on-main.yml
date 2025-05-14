@@ -1,0 +1,55 @@
+name: Auto Release on main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run data fetch and conversion
+        run: |
+          python query_euvd.py --mode daily || echo "No data found"
+          python convert_euvd_json.py || echo "No JSON files to convert"
+
+      - name: Zip output directory
+        if: ${{ always() }}
+        run: |
+          if [ -d "output" ]; then
+            zip -r euvd_output.zip output
+          else
+            echo "output/ not found, skipping zip"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: auto-${{ github.run_number }}
+          name: "Automatic Release ${{ github.run_number }}"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to release
+        if: ${{ always() && exists('euvd_output.zip') }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: auto-${{ github.run_number }}
+          files: euvd_output.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
