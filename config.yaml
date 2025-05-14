@@ -7,7 +7,7 @@ query:
       - IOS
     F5:
       - BIG-IP
-  # time_ranges wird dynamisch durch --mode ersetzt
+  # time_ranges is dynamically generated via --mode
   from_score: 0
   to_score: 10
   from_epss: 0

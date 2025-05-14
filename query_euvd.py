@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 import requests
 import calendar
 
-def load_config(path='config2.yaml'):
+def load_config(path='config.yaml'):
     with open(path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
@@ -55,7 +55,7 @@ def fetch_vulnerabilities(api_url, vendor, product, from_date, to_date, query_cf
         total = data.get("total", 0)
 
         all_results.extend(items)
-        print(f"  Seite {page + 1}: {len(items)} Einträge geladen (gesamt: {total})")
+        print(f"  Page {page + 1}: {len(items)} entries loaded (total: {total})")
 
         if len(all_results) >= total or not items:
             break
@@ -70,7 +70,7 @@ def get_output_filename(vendor, product, from_date, to_date, mode):
 
     if mode == "weekly":
         weeknum = from_date.isocalendar().week
-        return f"{base}_KW{weeknum}_{timestamp}"
+        return f"{base}_Week{weeknum}_{timestamp}"
     elif mode == "monthly":
         monthname = calendar.month_name[from_date.month]
         return f"{base}_{monthname}_{timestamp}"
@@ -78,29 +78,29 @@ def get_output_filename(vendor, product, from_date, to_date, mode):
         return f"{base}_{from_date}_{to_date}"
 
 def main():
-    parser = argparse.ArgumentParser(description="EUVD Abfrage-Tool")
-    parser.add_argument('--mode', choices=['daily', 'weekly', 'monthly'], help='Zeitmodus für Abfrage')
-    parser.add_argument('--config', default='config2.yaml', help='Pfad zur Konfigurationsdatei')
+    parser = argparse.ArgumentParser(description="EUVD Query Tool")
+    parser.add_argument('--mode', choices=['daily', 'weekly', 'monthly'], help='Time range mode')
+    parser.add_argument('--config', default='config.yaml', help='Path to configuration file')
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    api_url = cfg.get('api', {}).get('url')
-    if not api_url:
-        raise ValueError("Fehlender Eintrag 'api.url' in config.yaml")
-
-    query_cfg = cfg.get('query', {})
-    vendor_product_map = query_cfg.get('vendor_product_map', {})
-    out_dir = cfg.get('output', {}).get('folder', './output')
+    api_url = cfg['api']['url']
+    query_cfg = cfg['query']
+    out_dir = cfg['output']['folder']
     os.makedirs(out_dir, exist_ok=True)
 
     mode = args.mode
     if mode:
         from_date, to_date = determine_time_range(mode)
+        if from_date is None:
+            raise ValueError("Invalid time mode")
         query_cfg['time_ranges'] = [
             {'from': from_date.isoformat(), 'to': to_date.isoformat()}
         ]
     else:
-        raise ValueError("Bitte --mode angeben (daily, weekly, monthly)")
+        from_date = to_date = None  # fallback to manual range
+
+    vendor_product_map = query_cfg['vendor_product_map']
 
     for vendor, products in vendor_product_map.items():
         for product in products:
@@ -110,7 +110,7 @@ def main():
                 from_d = date.fromisoformat(from_str)
                 to_d = date.fromisoformat(to_str)
 
-                print(f"\n🔍 Abfrage: {vendor} / {product} ({from_str} → {to_str})")
+                print(f"\n🔍 Query: {vendor} / {product} ({from_str} → {to_str})")
                 data = fetch_vulnerabilities(
                     api_url,
                     vendor,
@@ -121,7 +121,7 @@ def main():
                 )
 
                 if not data:
-                    print(f"⚠️  Keine Einträge für {vendor} / {product} → keine Dateien gespeichert.")
+                    print(f"⚠️  No entries for {vendor} / {product} → nothing saved.")
                     continue
 
                 fname_base = get_output_filename(vendor, product, from_d, to_d, mode)
@@ -130,7 +130,7 @@ def main():
                 with open(json_path, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
 
-                print(f"✅ {len(data)} Einträge gespeichert in:")
+                print(f"✅ {len(data)} entries saved:")
                 print(f"   - JSON: {json_path}")
 
 if __name__ == '__main__':
