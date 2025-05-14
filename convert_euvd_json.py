@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from collections import defaultdict
 
+
 def flatten_euvd_data(json_path):
     with open(json_path, encoding="utf-8") as f:
         items = json.load(f)
@@ -38,6 +39,7 @@ def flatten_euvd_data(json_path):
 
     return pd.DataFrame(rows)
 
+
 def convert_to_formats(input_path):
     df = flatten_euvd_data(input_path)
     base = Path(input_path).with_suffix("")
@@ -45,14 +47,14 @@ def convert_to_formats(input_path):
     # CSV
     csv_file = base.with_suffix(".csv")
     df.to_csv(csv_file, index=False)
-    print(f"✅ CSV gespeichert: {csv_file.name}")
+    print(f"✅ CSV saved: {csv_file.name}")
 
     # HTML
     html_file = base.with_suffix(".html")
     df.to_html(html_file, index=False)
-    print(f"✅ HTML gespeichert: {html_file.name}")
+    print(f"✅ HTML saved: {html_file.name}")
 
-    # XML (optional)
+    # XML
     try:
         xml_file = base.with_suffix(".xml")
         xml_df = df.copy()
@@ -61,23 +63,23 @@ def convert_to_formats(input_path):
             for col in xml_df.columns
         ]
         xml_df.to_xml(xml_file, index=False, root_name="vulnerabilities", row_name="entry")
-        print(f"✅ XML gespeichert: {xml_file.name}")
-    except ImportError:
-        print("⚠️  XML-Export nicht möglich: 'lxml' nicht installiert (empfohlen: pip install lxml)")
+        print(f"✅ XML saved: {xml_file.name}")
     except Exception as e:
-        print(f"⚠️  XML-Export fehlgeschlagen: {e}")
+        print(f"⚠️  XML export failed: {e}")
+
 
 def main():
-    output_dir = Path("./output")
-    json_files = list(output_dir.glob("*.json"))
+    input_dir = Path("output")
+    json_files = list(input_dir.glob("*.json"))
 
     if not json_files:
-        print("⚠️  Keine JSON-Dateien im 'output'-Verzeichnis gefunden.")
+        print("⚠️  No JSON files found in 'output/' directory.")
         return
 
-    for json_file in json_files:
-        print(f"\n🔄 Konvertiere Datei: {json_file.name}")
-        convert_to_formats(json_file)
+    for file in json_files:
+        print(f"\n🔄 Converting file: {file.name}")
+        convert_to_formats(file)
+
 
 if __name__ == "__main__":
     main()
