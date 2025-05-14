@@ -1,0 +1,20 @@
+api:
+  url: https://euvdservices.enisa.europa.eu/api/vulnerabilities
+
+query:
+  vendor_product_map:
+    Cisco:
+      - IOS
+    F5:
+      - BIG-IP
+  # time_ranges wird dynamisch durch --mode ersetzt
+  from_score: 0
+  to_score: 10
+  from_epss: 0
+  to_epss: 100
+  exploited: false
+  page_size: 100
+  sleep_seconds: 1
+
+output:
+  folder: ./output
