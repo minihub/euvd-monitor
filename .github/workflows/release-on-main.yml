@@ -40,6 +40,14 @@ jobs:
             echo "ZIP_CREATED=false" >> $GITHUB_ENV
           fi
 
+      - name: Delete older releases
+        uses: dev-drprasad/delete-older-releases@v0.2.1
+        with:
+          keep_latest: 0           # 0 = delete all previous releases
+          delete_tags: true        # also delete matching tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
