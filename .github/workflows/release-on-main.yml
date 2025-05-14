@@ -27,13 +27,14 @@ jobs:
           python query_euvd.py --mode daily || echo "No data found"
           python convert_euvd_json.py || echo "No JSON files to convert"
 
-      - name: Zip output directory
-        if: ${{ always() }}
+      - name: Zip output directory (if exists)
         run: |
           if [ -d "output" ]; then
             zip -r euvd_output.zip output
+            echo "ZIP_CREATED=true" >> $GITHUB_ENV
           else
-            echo "output/ not found, skipping zip"
+            echo "No output directory found, skipping zip"
+            echo "ZIP_CREATED=false" >> $GITHUB_ENV
           fi
 
       - name: Create GitHub Release
@@ -45,8 +46,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload ZIP to release
-        if: ${{ always() && exists('euvd_output.zip') }}
+      - name: Upload ZIP to Release
+        if: env.ZIP_CREATED == 'true'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: auto-${{ github.run_number }}
